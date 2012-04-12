@@ -1,0 +1,28 @@
+<%attr>
+    title   => 'My Account'
+</%attr>
+<%init>
+    my $current = $r->uri;
+    $current =~ s{^.*\/}{};
+    $current ||= 'index.html';
+    my @tabs = (
+        [ 'index.html' => 'Summary' ],
+        [ 'lists.html' => 'Mailing Lists' ],
+        [ 'password.html' => 'Change Password' ],
+    );
+</%init>
+
+<div class="row"><p>
+<ul class="nav nav-tabs">
+% for my $tab ( @tabs ) {
+%   my ( $uri, $title ) = @{ $tab };
+%   if ( $uri eq $current ) {
+        <li class="active"><a href="<% $uri %>"><% $title %></a></li>
+%   } else {
+        <li><a href="<% $uri %>"><% $title %></a></li>
+%   }
+% }
+</ul>
+</p></div>
+
+% $m->call_next;

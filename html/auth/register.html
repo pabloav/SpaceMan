@@ -1,0 +1,109 @@
+<%args>
+    $name       => ''
+    $email      => ''
+    $username   => ''
+</%args>
+
+<%init>
+#    error( 'Registration is not available yet' );
+#    return;
+    my $registered = 0;
+    if ( $name || $email || $username ) {
+        my @errors = ();
+
+        if ( $email ) {
+            if ( $SpaceMan->find_person_by_email( $email ) ) {
+                push( @errors => "An account with that email already exists" );
+            }
+        } else {
+            push( @errors => "The 'email' field is required" );
+        }
+        if ( $username ) {
+            my ( $res, @msg ) = $SpaceMan->is_username_available( $username );
+            if ( $res ) {
+                $username = $msg[0];
+            } else {
+                push( @errors => "Username '$username' $msg[0]" );
+            }
+        } else {
+            push( @errors => "The 'username' field is required" );
+        }
+        push( @errors => "The 'name' field is required" ) unless $name;
+
+        if ( @errors ) {
+            error( $_ ) for @errors;
+        } else {
+            my $person = $SpaceMan->rs( 'Person' )->new( {
+                username    => $username,
+                name        => $name,
+            } );
+            $person->add_to_emails( {
+                email_address   => $email,
+                primary_address => 1,
+            } );
+
+            chomp( my $password = `pwgen 10 1` );
+            $person->set_password( $password );
+            $person->insert_or_update;
+            $person->join_mailing_list( 'announcements' );
+            $person->join_mailing_list( 'chatter' );
+            $person->send_email( 'auth/register-email.txt' => {
+                username    => $username,
+                password    => $password,
+            } );
+            $registered = 1;
+        }
+    }
+</%init>
+
+% if ( $registered ) {
+
+<div class="hero-unit">
+    <h1>Welcome to Nova Labs!</h1>
+    <p>A password has been emailed to you.  Once you receive the email you
+       will be able to login!</p>
+</div>
+
+% } else {
+
+<form method="POST" action="<% $r->uri %>" class="form">
+
+<div class="row">
+    <div class="span4">
+        <h2>Register</h2>
+        <p>Sign up now!</p>
+    </div>
+    <div class="span8">
+        <fieldset>
+            <legend>Personal Information</legend>
+            <div class="clearfix">
+                <label for="name">Name</label>
+                <div class="input">
+                <input class="xlarge" name="name" type="text" value="<% $name %>" />
+                </div>
+            </div><!-- /clearfix -->
+            <div class="clearfix">
+                <label for="email">Email Address</label>
+                <div class="input">
+                <input class="xlarge" name="email" type="email" value="<% $email %>" />
+                </div>
+            </div><!-- /clearfix -->
+            <div class="clearfix">
+                <label for="username">Username</label>
+                <div class="input">
+                <input class="xlarge" name="username" type="text" value="<% $username %>" />
+                </div>
+            </div><!-- /clearfix -->
+        </fieldset>
+    </div>
+</div>
+
+<div class="actions">
+    <button type="submit" class="btn btn-primary">Submit Registration</button>
+    &nbsp;
+    <button type="reset" class="btn">Cancel</button>
+</div>
+
+</form>
+
+% }

@@ -1,0 +1,76 @@
+<%attr>
+    breadcrumb  => 'Mailing Lists'
+</%attr>
+
+<%args>
+    $sub    => ''
+    $unsub  => ''
+</%args>
+
+<%init>
+    if ( $sub ) {
+        my $list = $SpaceMan->mailing_list( $sub );
+        if ( $list->can_self_subscribe ) {
+            $list->subscribe_emails( $User->email );
+        }
+    }
+    if ( $unsub ) {
+        my $list = $SpaceMan->mailing_list( $sub );
+        if ( $list->can_self_unsubscribe ) {
+            $list->unsubscribe_emails( $User->email );
+        }
+    }
+    my $lists = $User->mailing_lists;
+</%init>
+
+<form method="POST" action="<% $r->uri %>" class="form-inline">
+
+<div class="row">
+    <table class="bordered-table">
+    <tr><th>Group</th><th>Description</th></tr>
+% for my $list ( $SpaceMan->mailing_lists->all ) {
+%   my $name = $list->name;
+%   next if $name eq 'mailman';
+%   next unless $lists->{ $name } || $list->can_self_subscribe;
+    <tr>
+        <td><% $name %></td>
+        <td><% $list->summary %></td>
+        <td>
+%   if ( $lists->{ $name } ) {
+        Subscribed (<a href="<% $r->uri %>?unsub=<% $name %>">unsubscribe</a>)
+%#        Subscribed as <% join( ', ', @{ $lists->{ $name } } ) %>
+%   } else {
+        Not Subscribed
+%       if ( $list->can_self_subscribe ) {
+            (<a href="<% $r->uri %>?sub=<% $name %>">subscribe</a>)
+%       }
+%#        Not Subscribed (<a href="<% $r->uri %>?subscribe=<% $name %>">subscribe</a>)
+%   }
+        <!--
+            <input type="checkbox" name="[% group.name %]"[%
+                ' CHECKED' IF my_groups.defined( group.name );
+                ' DISABLED' IF group.is_restricted_access;
+            %]> Subscribe
+        -->
+        </td>
+    </tr>
+% }
+    </table>
+</div>
+
+<!--
+<div class="actions">
+    [% FOR addr IN user.mail %]
+        <input type="checkbox" name="subscribe" value="[% addr %]" /> Subscribe [% addr %] to selected lists.<br/>
+    [% END %]
+    [% FOR addr IN user.mail %]
+        <input type="checkbox" name="unsubscribe" value="[% addr %]" /> Unsubscribe [% addr %] from selected lists.<br/>
+    [% END %]
+    <button type="submit" class="btn primary">Save changes</button>
+    &nbsp;
+    <button type="reset" class="btn">Cancel</button>
+</div>
+-->
+
+</form>
+%# <xmp><% Dumper( $lists ) %></xmp>

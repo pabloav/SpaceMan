@@ -1,0 +1,34 @@
+<%args>
+    $username
+    $password
+</%args>
+Bcc: jason@nova-labs.org
+From: NOVA-Labs Membership <membership@nova-labs.org>
+Subject: Your NOVA-Labs Membership
+
+Welcome to NOVA-Labs!
+
+You now have access to our online services, available at
+http://www.nova-labs.org/
+
+Your username is : <% $username %>
+Your password is : <% $password %>
+
+What should you do next?
+
+* You have been automatically subscribed to our announcements
+  mailing list, but you should take a look at the mailing
+  lists that are available and see if there are any others
+  you would like to join.
+  We recommend you join at least the 'chatter' mailing list,
+  where most of the assorted discussions take place.
+  You can do manage your mailing list subscriptions at
+  https://www.nova-labs.org/account/lists.html
+
+* Although we have assigned you a random password initially,
+  you might want to change it to something you can more
+  easily remember.
+  You can change your password at
+  https://www.nova-labs.org/account/password.html
+
+Welcome aboard!  We can't wait to see what you will create!

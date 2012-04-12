@@ -1,0 +1,41 @@
+<%attr>
+    breadcrumb      => 'My Account'
+</%attr>
+
+<div class="row">
+    <div class="span6">
+        <h2>Personal Info</h2>
+        <table class="bordered-table">
+            <tbody>
+                <tr>
+                    <th>Username:</th>
+                    <td><% $User->username %></td>
+                </tr>
+                <tr>
+                    <th>Name:</th>
+                    <td><% $User->name %></td>
+                </tr>
+                <tr>
+                    <th>Primary Email Address:</th>
+                    <td><% $User->email %></td>
+                </tr>
+                <tr>
+                    <th>Email Addresses:</th>
+                    <td>
+% for my $mail ( $User->emails ) {
+                        <% $mail->email_address %><br/>
+% }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="span6">
+        <h2>My Groups</h2>
+        <ul>
+% for my $group ( sort $User->groups ) {
+        <li><% $group->name %></a></li>
+% }
+        </ul>
+    </div>
+</div>

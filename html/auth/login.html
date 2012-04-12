@@ -1,0 +1,81 @@
+<%args>
+    $username   => ''
+    $password   => ''
+    $dest       => '/'
+</%args>
+
+<%init>
+    my $reason = '';
+
+    if ( $r->prev ) {
+        $dest = $r->prev->uri || '/';
+
+        # if there are args, append that to the url
+        if ( my $args = $r->prev->args ) { $dest .= "?$args" }
+
+        $reason = $r->prev->subprocess_env( 'AuthReason' );
+    }
+
+    my %reasons = (
+        # bad_cookie      => 'Your authentication cookie is invalid.',
+        # no_cookie       => 'You don\'t have an authentication cookie!',
+        bad_credentials => 'Incorrect username or password.',
+    );
+
+    $r->no_cache( 1 );
+    $r->headers_out->set( 'Pragma' => 'no-cache' );
+    $r->uri( $dest );
+   # page( 'auth/login.html' => {
+   #     ( $reasons{ $reason } ? ( error => $reasons{ $reason } ) : () ),
+   #     dest     => $dest,
+   #     params(),
+   #     noexit  => 1,
+   # } );
+</%init>
+
+<div class="row">
+    <div class="span6">
+        <h2>Login</h2>
+        <form method="POST" action="/auth/LOGIN" class="form-horizontal">
+        <input type="hidden" name="dest" value="<% $dest %>" />
+        <fieldset>
+            <legend>
+            Enter your username and password to login.
+            </legend>
+
+            <div class="control-group">
+                <label class="control-label" for="username">Username</label>
+                <div class="controls">
+                <input class="input-xlarge" name="username" type="text" value="<% $username %>" id="username" />
+                </div>
+            </div>
+            <div class="control-group">
+                <label class="control-label" for="password">Password</label>
+                <div class="controls">
+                <input class="input-xlarge" name="password" type="password" id="password" />
+                </div>
+            </div>
+        </fieldset>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Login</button>
+            &nbsp;
+            <button type="reset" class="btn">Cancel</button>
+        </div>
+        </form>
+    </div>
+    <div class="span6">
+        <div class="alert alert-error alert-block">
+            <h2 class="alert-heading">Forgot your Password?</h2>
+            <p>
+            If you have forgotten your password, you can
+            <a href="/auth/password.html">reset it here</a>.
+            </p>
+        </div>
+        <div class="alert alert-success alert-block">
+            <h2 class="alert-heading">Not a member yet?</h2>
+            <p><a href="/auth/register.html">Register Here!</a></p>
+        </div>
+    </div>
+</div>
+
+</form>

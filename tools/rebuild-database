@@ -1,0 +1,5 @@
+#!/bin/sh
+
+dropdb spaceman
+createdb spaceman
+./build-database

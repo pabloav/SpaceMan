@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Create a directory of SQL files for supported database servers
+#dbicdeploy -Ilib SpaceMan::DB sql-files
+
+# Deploy database directly to postgres
+dbicdeploy -Ilib SpaceMan::DB DBI:Pg:dbname=spaceman
+
+#dbicdump -o dump_directory=./lib -o components='["InflateColumn::DateTime"]' SpaceMan::DB dbi:Pg:dbname=spaceman
