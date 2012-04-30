@@ -8,20 +8,19 @@ use Net::LDAP;
 my $man = SpaceMan->new;
 
 my $people = $man->rs( 'Person' );
+my $groups = $man->rs( 'Group' );
 
 # TODO - figure out what to do when there are duplicate names
 my %people = ();
-my %byuid = ();
+my %groups = ();
 
 while ( my $person = $people->next ) {
     next unless $person->posix_uid;
-    my $name = $person->name;
-    if ( $people{ $name } ) {
-        warn "duplicate found! ($name)";
-        next;
-    }
-    $people{ $name } = $person;
-    $byuid{ $person->posix_uid } = $person;
+    $people{ $person->dn } = $person;
+}
+while ( my $group = $groups->next ) {
+    next unless $group->posix_gid;
+    $groups{ $group->dn } = $group;
 }
 
 my $ldap = Net::LDAP->new( 'localhost', onerror => 'die' ) or die "$@";
@@ -30,54 +29,37 @@ $ldap->bind(
     password => $man->config->ldap_sync_password,
 );
 
-my $mesg = $ldap->search(
+# Sync people
+my $mesg1 = $ldap->search(
     base    => "ou=People,".$man->config->ldap_base,
-    filter  => '(objectClass=posixAccount)',
+    filter  => '(|(objectClass=posixAccount)(objectClass=groupOfNames))',
 );
 
-for my $entry ( $mesg->entries  ) {
-    # TODO - delete if not in database
-    #$ldap->delete( $dn );
-    my $uid = $entry->get_value( 'uidNumber' );
-    print "UID: $uid\n";
-    if ( my $db = delete $byuid{ $uid } ) {
-        my $name = $db->name;
-        $name =~ /(\S+)$/;
-        my $surname = $1;
-        $ldap->modify( $dn => (
-            replace => {
-                uid             => $db->username,
-                sn              => $surname,
-                objectClass     => [qw( posixAccount )],
-                uidNumber       => $db->posix_uid,
-                gidNumber       => 100,
-                userPassword    => $db->get_password( 'ssha' ),
-                memberOf        => [ map { $_->dn } $db->groups ],
-                homeDirectory   => "/home/".$db->username,
-                mail            => $db->email,
-            },
-        ) );
-        merge( $db, $entry );
+for my $entry ( $mesg1->entries  ) {
+    if ( my $db = delete $people{ $entry->dn } ) {
+        $ldap->modify( $db->dn, replace => { $db->ldap_attrs } );
     } else {
         $ldap->delete( $entry->dn );
     }
-#    $ldap->modify( $dn => (
-#        replace => {
-#        },
-#    ) );
+}
+for my $person ( values %people ) {
+    print "ADD: ".$person->dn."\n";
+    $ldap->add( $person->dn, attr => [ $person->ldap_attrs ] );
 }
 
-__END__
-for my $person ( values %people ) {
-    my $uid = $person->posix_uid;
-    my $name = $person->name;
-    print "dn: cn=$name,ou=People,dc=nova-labs,dc=org\n";
-    print "cn: $name\n";
-    print "uid: ".$person->username."\n";
-    $name =~ /(\S+)$/;
-    print "sn: $1\n";
-    print "objectClass: posixAccount\n";
-    print "uidNumber: $uid\n";
-    print "gidNumber: 100\n";
-    print "homeDirectory: /home/$name\n";
+my $mesg2 = $ldap->search(
+    base    => "ou=Groups,".$man->config->ldap_base,
+    filter  => '(objectClass=posixGroup)',
+);
+
+for my $entry ( $mesg2->entries  ) {
+    if ( my $db = delete $groups{ $entry->dn } ) {
+        $ldap->modify( $db->dn, replace => { $db->ldap_attrs } );
+    } else {
+        $ldap->delete( $entry->dn );
+    }
+}
+for my $group ( values %groups ) {
+    print "ADD: ".$group->dn."\n";
+    $ldap->add( $group->dn, attr => [ $group->ldap_attrs ] );
 }
