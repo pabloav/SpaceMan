@@ -2,6 +2,7 @@ package SpaceMan::Mason;
 use strict;
 use HTML::Mason::ApacheHandler;
 use Apache2::Request;
+use Apache2::SubRequest ();
 use Apache2::Const qw( DECLINED );
 use SpaceMan::Config;
   
@@ -25,14 +26,14 @@ my $ah = HTML::Mason::ApacheHandler->new(
 sub handler {
     my $r = shift;  # Apache request object;
 
-    return DECLINED if $r->uri =~ m#/~#;
+    return DECLINED if $r->uri =~ m#^/~#;
 
     my $section = '';
     if ( $r->uri =~ m#^/(\w+)# ) { $section = $1 }
 
     return DECLINED if $section eq 'blog';
     return DECLINED if $section eq 'wiki';
-  
+
     return $ah->handle_request($r);
 }
 
@@ -42,6 +43,9 @@ package HTML::Mason::Commands;
 use HTML::FromText qw( text2html );
 use Apache2::Request ();
 use Data::Dumper qw( Dumper );
+use DateTime;
+use DateTime::Format::Strptime;
+use Scalar::Util qw( blessed );
 use SpaceMan;
 use vars qw( $SpaceMan $User @_messages );
 
@@ -63,5 +67,25 @@ sub error { message( error => @_ ) }
 sub success { message( success => @_ ) }
 sub warning { message( warning => @_ ) }
 sub info { message( info => @_ ) }
+
+my $date_format = DateTime::Format::Strptime->new( pattern => '%A, %B %e %Y' );
+my $time_format = DateTime::Format::Strptime->new( pattern => '%I:%M %p' );
+
+
+sub format_date {
+    my $date = shift;
+    if ( blessed( $date ) ) {
+        $date->set_formatter( $date_format );
+    }
+    return $date;
+}
+
+sub format_time {
+    my $time = shift;
+    if ( blessed( $time ) ) {
+        $time->set_formatter( $time_format );
+    }
+    return $time;
+}
 
 1;

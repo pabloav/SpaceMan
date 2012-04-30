@@ -38,6 +38,14 @@ __PACKAGE__->set_primary_key( "id" );
 
 __PACKAGE__->add_unique_constraint( [ 'name' ] );
 
+__PACKAGE__->has_many(
+    'mailing_list_admins'.
+    'SpaceMan::DB::Result::MailingList::Admin',
+    { 'foreign.mailing_list_id' => 'self.id' },
+    { cascade_copy => 0, cascade_delete => 0 },
+);
+__PACKAGE__->many_to_many( 'admins', 'mailing_list_admins', 'person' );
+
 sub subscribe_emails {
     my $self = shift;
 

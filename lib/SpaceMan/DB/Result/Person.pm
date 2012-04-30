@@ -15,12 +15,13 @@ __PACKAGE__->add_columns(
         is_auto_increment   => 1,
         is_nullable         => 0,
         sequence            => 'people_id_seq',
+        label               => 'Database ID',
     },
     member_type     => {
         data_type           => 'varchar',
         size                => 16,
         is_nullable         => 0,
-        default_value       => 'UNKNOWN',
+        default_value       => 'General',
     },
     name            => {
         data_type           => 'varchar',
@@ -40,6 +41,31 @@ __PACKAGE__->add_columns(
     posix_uid       => {
         data_type           => 'integer',
         is_nullable         => 1,
+    },
+    created_timestamp   => {
+        data_type           => 'timestamp without time zone',
+        is_nullable         => 0,
+        default_value       => \'now()',
+    },
+    joined_date             => {
+        data_type           => 'date',
+        is_nullable         => 1,
+        # TODO
+        #is_nullable         => 0,
+        #default_value       => \'now()',
+    },
+    waiver_date             => {
+        data_type           => 'date',
+        is_nullable         => 1,
+    },
+    safety_date             => {
+        data_type           => 'date',
+        is_nullable         => 1,
+    },
+    sponsor_id          => {
+        data_type           => 'integer',
+        is_nullable         => 1,
+        is_foreign_key      => 1,
     },
 );
 
@@ -63,14 +89,6 @@ __PACKAGE__->has_many(
 );
 
 __PACKAGE__->has_many(
-    "person_roles",
-    "SpaceMan::DB::Result::Person::Role",
-    { "foreign.person_id" => "self.id" },
-    { cascade_copy => 0, cascade_delete => 0 },
-);
-__PACKAGE__->many_to_many( "roles", "person_roles", "role" );
-
-__PACKAGE__->has_many(
     'person_groups',
     'SpaceMan::DB::Result::Person::Group',
     { 'foreign.person_id' => 'self.id' },
@@ -78,15 +96,27 @@ __PACKAGE__->has_many(
 );
 __PACKAGE__->many_to_many( 'groups', 'person_groups', 'group' );
 
-sub all_roles {
-    my $self = shift;
+sub is_member_of {
+    my ( $self, @groups ) = @_;
 
-    my $set = Set::Object->new( $self->roles );
-    for my $group ( $self->groups ) {
-        $set->insert( $group->roles );
+    # TODO - make this a database search instead of iterating
+    for my $grp ( @groups ) {
+        for my $group ( $self->groups ) {
+            if ( lc( $group->name ) eq lc( $grp ) ) {
+                return 1;
+            }
+        }
     }
-    return wantarray ? $set->members : $set;
+    return 0;
 }
+
+__PACKAGE__->belongs_to(
+    'sponsor',
+    'SpaceMan::DB::Result::Person',
+    'sponsor_id',
+    { join_type => 'left' }
+);
+    #{ 'self.sponsor_id' => 'foreign.id' },
 
 sub verify_password {
     my ( $self, $input ) = @_;
@@ -227,6 +257,35 @@ sub leave_mailing_list {
         $ml->unsubscribe_emails( map { $_->email_address } $self->emails );
     }
 }
+
+sub dn {
+    return sprintf( "uid=%s,ou=People,%s",
+        shift->username,
+        SpaceMan->config->ldap_base
+    );
+}
+
+sub ldap_attrs {
+    my $self = shift;
+
+    #my $name = $self->name;
+    #$name =~ /(\S+)$/;
+    #my $surname = $1;
+
+    return (
+        cn              => $self->name,
+        uid             => $self->username,
+        objectClass     => [qw( account posixAccount shadowAccount )],
+        uidNumber       => $self->posix_uid,
+        gidNumber       => 100,
+        userPassword    => $self->get_password( 'ssha' ),
+        homeDirectory   => [ "/home/".$self->username ],
+    );
+}
+
+sub balance { return '$0.00' }
+
+sub stringify { return shift->name }
 
 __PACKAGE__->meta->make_immutable( inline_constructor => 0 );
 1;

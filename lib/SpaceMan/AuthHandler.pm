@@ -18,25 +18,22 @@ use SpaceMan;
 use Apache2::Const qw( :common M_GET HTTP_FORBIDDEN HTTP_MOVED_TEMPORARILY );
 
 
-#my $SECRET = SpaceMan::Config->auth_secret;
-my $SECRET = 'lakdjglasdkjgalsgkjadslgjkasdlgkjadslgajk';
+my $SECRET = SpaceMan->config( 'auth_secret' );
 my $COOKIE = 'AuthCookie';
 my $P3P = '';
 my $PATH = '/';
-#my $DOMAIN = '.'.SpaceMan::Config->domain;
-my $DOMAIN = '.nova-labs.org';
+my $DOMAIN = '.'.SpaceMan->config( 'domain' );
 
 sub allow_anonymous {
     my $uri = shift;
 
     # TODO - make these configuration options instead of hardcoded regexes
     return 1 if $uri =~ m#^/(auth|css|js|icons|images|novabar|img|blog)($|/)#;
-    return 1 if $uri =~ m#^/(calendar|mailman|donate|wiki|about)($|/)#;
+    return 1 if $uri =~ m#^/(calendar|mailman|wiki|about)($|/)#;
     return 1 if $uri =~ m#^/(about)\.html$#;
     return 1 if $uri =~ m#^/~#;
     return 1 if $uri =~ m#^/favicon\.ico$#;
     return 1 if $uri =~ m#^/$#;
-    #return 1 if $uri =~ m#^/webdav($|/)#; # /files has special authentication
     return 0;
 }
 
@@ -127,10 +124,14 @@ sub authorize {
     my @reqs = @{ $r->requires || [] };
     return DECLINED unless @reqs;
 
-    my $user = $r->user || return HTTP_FORBIDDEN;
+    my $user = $self->get_user( $r ) || return HTTP_FORBIDDEN;
 
     for ( @reqs ) {
         my ( $req, @args ) = split( ' ', $_->{ 'requirement' } );
+        $r->log_error( "req: $req (@args)" );
+        if ( $req eq 'group' ) {
+            if ( $user->is_member_of( @args ) ) { return OK }
+        }
         if ( $req eq 'open' ) { return OK }
         if ( $req eq 'member' ) { return OK }
     }
