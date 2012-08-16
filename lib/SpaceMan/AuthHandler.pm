@@ -29,7 +29,7 @@ sub allow_anonymous {
 
     # TODO - make these configuration options instead of hardcoded regexes
     return 1 if $uri =~ m#^/(auth|css|js|icons|images|novabar|img|blog)($|/)#;
-    return 1 if $uri =~ m#^/(calendar|mailman|wiki|about)($|/)#;
+    return 1 if $uri =~ m#^/(calendar|mailman|wiki|about|contact)($|/)#;
     return 1 if $uri =~ m#^/(about)\.html$#;
     return 1 if $uri =~ m#^/~#;
     return 1 if $uri =~ m#^/favicon\.ico$#;
