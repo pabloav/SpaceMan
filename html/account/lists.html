@@ -28,10 +28,14 @@
 <div class="row">
     <table class="bordered-table">
     <tr><th>Group</th><th>Description</th></tr>
-% for my $list ( $SpaceMan->mailing_lists->all ) {
+% my @lists = ( $SpaceMan->mailing_lists->all );
+% my @sublists = grep { exists $lists{ $_->name } } @lists;
+% my @unsublists = grep { !exists $lists{ $_->name } && $_->can_self_subscribe } @lists;
+
+% for my $list ( @sublists, @unsublists ) {
 %   my $name = $list->name;
 %   next if $name eq 'mailman';
-%   next unless $lists->{ $name } || $list->can_self_subscribe;
+%#   next unless exists $lists->{ $name } || $list->can_self_subscribe;
     <tr>
         <td><% $name %></td>
         <td><% $list->summary %></td>
